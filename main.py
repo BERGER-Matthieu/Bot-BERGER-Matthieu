@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 import Key
 import json
-import binary_tree as bt
+import requests
 import binary_tree_setup as bts
 
 intents = discord.Intents.all()
@@ -22,7 +22,13 @@ actual_history_node = history.first_node
 actual_history_name = None
 actual_tree_node = None
 
-
+def get_random_dog_image_url():
+    url = "https://dog.ceo/api/breeds/image/random"
+    res = requests.get(url)
+    data = res.json()
+    if "message" in data:
+        return data["message"]
+    return None
 # COMMANDS --------------------------------------------------------
 
 
@@ -126,8 +132,12 @@ async def VF(ctx, arg):
 
 @client.command()
 async def C(ctx):
-    history.clear(msg.Message("First message", "Bot"))
-    await ctx.message.add_reaction("✅")
+    admin_role = discord.utils.get(ctx.guild.roles, name="Admin")
+    if admin_role in ctx.author.roles:
+        history.clear(msg.Message("First message", "Bot"))
+        await ctx.message.add_reaction("✅")
+    else:
+        await ctx.message.add_reaction("🛑")
 
 
 @client.command()
@@ -138,12 +148,25 @@ async def L(ctx):
 
 @client.command()
 async def SAVE(ctx):
-    history.save()
-    await ctx.message.add_reaction("✅")
+    admin_role = discord.utils.get(ctx.guild.roles, name="Admin")
+    if admin_role in ctx.author.roles:
+        history.save()
+        await ctx.message.add_reaction("✅")
+    else:
+        await ctx.message.add_reaction("🛑")
+
+@client.command()
+async def DL(ctx):
+    admin_role = discord.utils.get(ctx.guild.roles, name="Admin")
+    if admin_role in ctx.author.roles:
+        await ctx.send(file=discord.File(r'list.json'))
+        await ctx.message.add_reaction("✅")
+    else:
+        await ctx.message.add_reaction("🛑")
 
 @client.command()
 async def SA(ctx, arg):
-    message = await ctx.send(tree.print_subject(str(arg)))
+    await ctx.send(tree.print_subject(str(arg)))
     await ctx.message.add_reaction("✅")
 
 
@@ -156,6 +179,15 @@ async def HELP(ctx):
     await message.add_reaction("◀️")
     await message.add_reaction("▶️")
     await message.add_reaction("❌")
+
+@client.command()
+async def DOG(ctx):
+    random_dog_image = get_random_dog_image_url()
+    if not random_dog_image:
+        await ctx.message.add_reaction("🛑")
+    else:
+        await ctx.message.add_reaction("✅")
+        await ctx.send(random_dog_image)
 
 
 client.run(Key.key)
